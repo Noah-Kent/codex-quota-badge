@@ -21,3 +21,13 @@ The first release is intentionally local-only. Notifications, login, account swi
 ```bash
 swift run CodexQuotaBadgeTestRunner
 ```
+
+## Run locally
+
+```bash
+bash scripts/run-local.sh
+```
+
+The app appears as `⌁ 配额` in the menu bar. Click it to show the two-row badge. If no local Codex quota snapshot is available, it shows a neutral unavailable state; it does not crash or request access to unrelated folders.
+
+Quit the process with `Control-C` when started from Terminal. V1 does not install itself to Applications, add a login item, or request notification permissions.
