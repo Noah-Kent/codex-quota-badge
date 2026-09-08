@@ -41,6 +41,24 @@ func testSeverityUsesRemainingPercentageThresholds() throws {
     try expectEqual(QuotaWindow.fixture(usedPercent: 91).severity, .critical, "critical threshold")
 }
 
+func testParserUsesTwoWindowRateLimitRecord() throws {
+    let source = try String(contentsOfFile: "Tests/CodexQuotaBadgeTestRunner/Fixtures/valid-two-window.jsonl")
+    let snapshot = try unwrap(RateLimitLogParser().latestSnapshot(in: source, now: .distantPast), "two-window snapshot")
+    try expectEqual(snapshot.windows.map(\.periodLabel), ["5H", "7D"], "two-window labels")
+    try expectEqual(snapshot.windows.map(\.remainingPercent), [52, 92], "two-window remaining values")
+}
+
+func testParserIgnoresIncompleteTrailingLine() throws {
+    let source = try String(contentsOfFile: "Tests/CodexQuotaBadgeTestRunner/Fixtures/incomplete-line.jsonl")
+    let snapshot = try unwrap(RateLimitLogParser().latestSnapshot(in: source, now: .distantPast), "valid line before partial input")
+    try expectEqual(snapshot.windows.count, 1, "partial trailing line ignored")
+}
+
+func unwrap<T>(_ value: T?, _ name: String) throws -> T {
+    guard let value else { throw TestFailure(description: "\(name): expected a value") }
+    return value
+}
+
 extension QuotaWindow {
     static func fixture(usedPercent: Double) -> QuotaWindow {
         QuotaWindow(id: "codex", duration: 5 * 60 * 60, usedPercent: usedPercent, resetsAt: .distantFuture)
@@ -51,6 +69,8 @@ let tests: [(String, () throws -> Void)] = [
     ("testFiveHourWindowUses5HLabelAndRemainingPercentage", testFiveHourWindowUses5HLabelAndRemainingPercentage),
     ("testSevenDayWindowUses7DLabel", testSevenDayWindowUses7DLabel),
     ("testSeverityUsesRemainingPercentageThresholds", testSeverityUsesRemainingPercentageThresholds)
+    , ("testParserUsesTwoWindowRateLimitRecord", testParserUsesTwoWindowRateLimitRecord)
+    , ("testParserIgnoresIncompleteTrailingLine", testParserIgnoresIncompleteTrailingLine)
 ]
 
 do {

@@ -1,12 +1,12 @@
 import Foundation
 
-public enum QuotaSeverity: Equatable {
+public enum QuotaSeverity: Equatable, Sendable {
     case normal
     case warning
     case critical
 }
 
-public struct QuotaWindow: Equatable, Identifiable {
+public struct QuotaWindow: Equatable, Identifiable, Sendable {
     public let id: String
     public let duration: TimeInterval
     public let usedPercent: Double

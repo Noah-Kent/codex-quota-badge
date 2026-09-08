@@ -14,7 +14,8 @@ let package = Package(
         .executableTarget(
             name: "CodexQuotaBadgeTestRunner",
             dependencies: ["CodexQuotaBadgeCore"],
-            path: "Tests/CodexQuotaBadgeTestRunner"
+            path: "Tests/CodexQuotaBadgeTestRunner",
+            exclude: ["Fixtures"]
         )
     ]
 )
