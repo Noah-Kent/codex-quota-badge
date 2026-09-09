@@ -15,6 +15,10 @@
 7D 92%
 ```
 
+点击菜单栏配额即可查看彩色进度条、重置时间和最后更新时间：
+
+![Codex Quota Badge 详情窗口](assets/screenshots/detail-preview.png)
+
 Codex Quota Badge 专注做好一件事：把最常查看的配额信息放在菜单栏，减少反复打开用量页面带来的打断。
 
 > 当前为开源预览版。正式公开下载前，安装包仍使用本地临时签名，尚未经过 Apple 公证；不同 Mac 的安全提示可能不同。
