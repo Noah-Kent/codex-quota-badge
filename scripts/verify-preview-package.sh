@@ -10,7 +10,7 @@ EXECUTABLE_PATH="$APP_PATH/Contents/MacOS/CodexQuotaBadge"
 test -x "$EXECUTABLE_PATH"
 test -f "$PLIST_PATH"
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$PLIST_PATH")" = "com.codexquotabadge.app"
-test "$(/usr/libexec/PlistBuddy -c 'Print :LSUIElement' "$PLIST_PATH")" = "1"
+test "$(/usr/libexec/PlistBuddy -c 'Print :LSUIElement' "$PLIST_PATH")" = "true"
 /usr/bin/codesign --verify --strict "$APP_PATH"
 test -f "$DMG_PATH"
 /usr/bin/hdiutil verify "$DMG_PATH" >/dev/null
