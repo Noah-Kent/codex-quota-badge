@@ -21,6 +21,9 @@ Implemented:
 - parser, formatting, and refresh-decision test coverage;
 - preview and local-run scripts;
 - Chinese-first open-source README emphasizing the privacy and performance boundaries.
+- MIT License;
+- first README detail-panel screenshot generated from fixed preview data;
+- README reordered around product understanding, trust, setup, and troubleshooting.
 
 ## Product boundaries
 
@@ -35,14 +38,11 @@ Implemented:
 
 Before a public GitHub release:
 
-1. Capture a clean hero screenshot showing both the menu-bar badge and detail panel.
-2. Choose and add an open-source `LICENSE` (MIT is the current candidate, owner confirmation required).
-3. Produce a signed and Apple-notarized `.app`/`.dmg` with a GitHub Releases download path.
-4. Reorder the README around screenshot, download, trust summary, features, and technical details.
-5. Verify and document tested macOS versions and CPU architectures; do not claim untested compatibility.
-6. Measure idle memory, CPU, and disk behavior on a release build and publish the methodology and results.
-7. Add troubleshooting and uninstall instructions.
-8. Add CI only after the release build and test commands are stable.
+1. Add focused menu-bar and unavailable-state screenshots after the distributable app workflow is stable.
+2. Produce a signed and Apple-notarized `.app`/`.dmg` with a GitHub Releases download path.
+3. Verify and document tested macOS versions and CPU architectures; do not claim untested compatibility.
+4. Measure idle memory, CPU, and disk behavior on a release build and publish the methodology and results.
+5. Add CI only after the release build and test commands are stable.
 
 Later improvements may include an English README, Homebrew Cask distribution, release notes, and a small set of GitHub repository topics.
 
