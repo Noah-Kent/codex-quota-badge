@@ -40,6 +40,16 @@ swift build
 swift run CodexQuotaBadge
 ```
 
+### 开发预览安装包
+
+本地可生成 `.app` 和 `.dmg` 预览包：
+
+```bash
+bash scripts/create-preview-dmg.sh
+```
+
+产物位于 `dist/`。它使用临时签名，仅用于本机预览，**尚未经过 Apple 公证**。Gatekeeper 会将它标记为不受信任，因此不要把该预览包分发给其他用户。正式可公开下载的版本会使用 Developer ID 签名并完成 Apple 公证。
+
 ## 主要功能
 
 - 菜单栏双行紧凑显示 5 小时和 7 天剩余配额；

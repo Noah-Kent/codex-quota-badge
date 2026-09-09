@@ -24,6 +24,8 @@ Implemented:
 - MIT License;
 - first README detail-panel screenshot generated from fixed preview data;
 - README reordered around product understanding, trust, setup, and troubleshooting.
+- reproducible local preview `.app` and `.dmg` scripts with ad-hoc signing;
+- package verifier checks bundle metadata, executable, signature, and DMG integrity.
 
 ## Product boundaries
 
@@ -39,10 +41,11 @@ Implemented:
 Before a public GitHub release:
 
 1. Add focused menu-bar and unavailable-state screenshots after the distributable app workflow is stable.
-2. Produce a signed and Apple-notarized `.app`/`.dmg` with a GitHub Releases download path.
-3. Verify and document tested macOS versions and CPU architectures; do not claim untested compatibility.
-4. Measure idle memory, CPU, and disk behavior on a release build and publish the methodology and results.
-5. Add CI only after the release build and test commands are stable.
+2. Obtain a Developer ID Application certificate and notarization credentials, then replace the temporary signing workflow with a signed and Apple-notarized `.app`/`.dmg`.
+3. Publish the notarized artifact through GitHub Releases with a direct download path.
+4. Verify and document tested macOS versions and CPU architectures; do not claim untested compatibility.
+5. Measure idle memory, CPU, and disk behavior on a release build and publish the methodology and results.
+6. Add CI only after the release build and test commands are stable.
 
 Later improvements may include an English README, Homebrew Cask distribution, release notes, and a small set of GitHub repository topics.
 

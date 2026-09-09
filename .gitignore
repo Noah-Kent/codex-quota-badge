@@ -2,6 +2,7 @@
 .superpowers/
 .worktrees/
 .build/
+dist/
 DerivedData/
 *.xcuserstate
 xcuserdata/
