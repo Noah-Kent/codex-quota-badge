@@ -27,6 +27,7 @@ Implemented:
 - reproducible local preview `.app` and `.dmg` scripts with ad-hoc signing;
 - package verifier checks bundle metadata, executable, signature, and DMG integrity.
 - documented an Apple Silicon Release-build idle measurement and its limits.
+- bilingual README entry points.
 
 ## Product boundaries
 

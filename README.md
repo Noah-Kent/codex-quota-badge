@@ -1,5 +1,7 @@
 # Codex Quota Badge
 
+[简体中文](README.md) | [English](README.en.md)
+
 一个轻量、安全、本地优先的 macOS 菜单栏工具，用来查看 Codex 的 5 小时与 7 天剩余配额。
 
 **无网络请求 · 不读取凭据 · 日志只读 · 无遥测**
