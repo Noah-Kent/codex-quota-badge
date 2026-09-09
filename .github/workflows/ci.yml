@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build and test (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Show Swift toolchain
+        run: swift --version
+
+      - name: Build Release executable
+        run: swift build -c release
+
+      - name: Run test suite
+        run: swift run CodexQuotaBadgeTestRunner
+
+      - name: Build and verify local preview package
+        run: |
+          bash scripts/create-preview-dmg.sh
+          bash scripts/verify-preview-package.sh

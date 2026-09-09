@@ -2,29 +2,30 @@
 
 ## Purpose
 
-Build a small macOS menu-bar companion that keeps Codex quota visible without opening the ChatGPT/Codex app. Its always-on display is a compact two-row badge placed below its menu-bar item.
+Build a small macOS menu-bar companion that keeps Codex quota visible without opening the ChatGPT/Codex app. Its always-on display is a compact, aligned two-line summary in the menu bar.
 
 The product is deliberately narrow: it shows the current rate-limit windows, their remaining percentage, and their reset countdowns. It must stay harmless when Codex is not installed, is not running, has no local data, or changes its local data format.
 
 ## Display
 
-The fixed two-row badge uses aligned columns:
+The menu bar uses a compact, aligned two-line summary:
 
 ```
-5H   52%       ↻ 2:13
-7D   92%       ↻ 6d 12h
+5H 52%
+7D 92%
 ```
 
-- `5H` and `7D` are equal-width period labels.
-- The percent and countdown columns use tabular numerals so refreshes do not move the layout.
+- `5H` and `7D` use equal-width labels and tabular numerals so updates do not shift the layout.
+- The summary uses the two known quota windows in duration order.
+- If a snapshot is unavailable, it reads `未检测到配额`.
 - Green is normal, orange is below 25% remaining, and red is below 10% remaining.
-- Clicking the menu-bar item opens a detail panel with absolute reset times, last update time, data-source state, and a manual refresh action.
+- Clicking the menu-bar item opens a detail panel with each absolute reset time, last update time, and a manual refresh action.
 
 ## Data and performance
 
-V1 reads only locally available Codex quota snapshots. It watches the narrowly scoped Codex session/log locations through file-system events, debounces bursts of changes, and parses only changed or newly appended data. It does not perform a periodic full-directory scan, send account data to a server, modify Codex files, or retain an activity history.
+V1 reads only locally available Codex quota snapshots. At launch it locates the newest valid log and caches that path, its modification time, and the latest valid snapshot. Each minute it first checks only the tracked file's status. An unchanged file reuses the in-memory snapshot; a changed file is reparsed; deletion or a new-session filesystem event triggers a new discovery scan. It never writes to Codex data, sends account data to a server, or retains an activity history.
 
-The process is idle between file-system events. It keeps one in-memory last-valid snapshot and writes only ordinary user preferences (for example, launch-at-login) when a setting changes. This makes CPU, memory, disk reads, and SSD writes negligible in normal use.
+The process is idle between one-minute checks. It keeps one in-memory last-valid snapshot and performs no recurring app-owned disk writes. In the normal unchanged state, the log file is not reopened or reparsed.
 
 The parser is isolated behind a `QuotaDataSource` interface so a future provider can use the local Codex App Server rate-limit method without touching the UI or state rules.
 
@@ -32,9 +33,9 @@ The parser is isolated behind a `QuotaDataSource` interface so a future provider
 
 | Situation | Result |
 | --- | --- |
-| Fresh valid snapshot | Show both available windows and live countdowns. |
+| Fresh valid snapshot | Show the aligned two-line summary and reset times in details. |
 | Codex is closed | Retain the last valid snapshot, dim it after a freshness threshold, and label the exact last-update time in details. |
-| Codex not installed or never used | Show a neutral unavailable state; explain that a Codex conversation must exist before local data can appear. |
+| Codex not installed or never used | Show `未检测到配额`; the app stays stable. |
 | Log is incomplete, malformed, or changed by an update | Preserve the last valid snapshot and retry later without alerting repeatedly. |
 | Only one rate-limit window is provided | Display one row; never invent a second window. |
 | Offline | Continue to display local data. |
@@ -50,17 +51,17 @@ When supported, active official workspace messages may be shown separately in th
 
 - Native SwiftUI macOS application with an `NSStatusItem` anchor and a non-activating `NSPanel` badge.
 - `QuotaDataSource`: discovers and validates local data.
-- `QuotaStore`: owns the last-valid snapshot, freshness, availability, and countdown timer.
-- `BadgeView` and `DetailPopover`: pure presentation.
-- `FileWatcher`: event-driven, debounced local watching.
+- `QuotaStore`: owns the last-valid snapshot, freshness, availability, and one-minute refresh timer.
+- `MenuBarSummaryFormatter` and `BadgeView`: summary and detail presentation.
+- `LogRefreshDecision`: decides whether to reuse memory, reparse the tracked file, or rediscover the newest session.
 - Parser fixtures cover valid, missing, partial, malformed, changed-format, single-window, and stale snapshots.
 
 ## Acceptance criteria
 
-1. The two rows remain visually aligned as values and countdown digits change.
+1. The menu bar shows aligned `5H <remaining>%` and `7D <remaining>%` rows for a valid two-window snapshot.
 2. With no Codex data, the app launches successfully and shows a calm unavailable state.
 3. With unreadable or malformed input, the app keeps the last valid reading and does not crash.
-4. In idle conditions, the app does no repeated full log scan and performs no recurring app-owned disk writes.
+4. After launch, an unchanged tracked file is not reopened or reparsed; file or session changes are discovered without recurring app-owned disk writes.
 5. The app neither stores credentials nor makes any network request in V1.
 6. V1 can be closed and relaunched without touching Codex configuration or session files.
 
