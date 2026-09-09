@@ -51,7 +51,7 @@ struct QuotaBadgeView: View {
     }
 
     private func resetTime(for window: QuotaWindow) -> String {
-        window.resetsAt.formatted(date: .abbreviated, time: .shortened)
+        ResetTimeFormatter.text(window.resetsAt)
     }
 
     private func color(for window: QuotaWindow) -> Color {

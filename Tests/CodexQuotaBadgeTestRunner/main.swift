@@ -146,6 +146,18 @@ func testLastUpdatedTimeIncludesSecondsForRefreshFeedback() throws {
     )
 }
 
+func testResetTimeUsesCompactDateAndTime() throws {
+    let originalTimeZone = NSTimeZone.default
+    NSTimeZone.default = TimeZone(secondsFromGMT: 8 * 60 * 60)!
+    defer { NSTimeZone.default = originalTimeZone }
+
+    try expectEqual(
+        ResetTimeFormatter.text(Date(timeIntervalSince1970: 45_296)),
+        "01/01 20:34",
+        "reset time fits beside the progress bar"
+    )
+}
+
 func testRefreshDecisionReusesSnapshotWhenTrackedLogIsUnchanged() throws {
     let date = Date(timeIntervalSince1970: 1_000)
     try expectEqual(
@@ -198,6 +210,7 @@ let tests: [(String, () throws -> Void)] = [
     , ("testMenuBarSummaryUsesUnavailableTextWhenNoSnapshotExists", testMenuBarSummaryUsesUnavailableTextWhenNoSnapshotExists)
     , ("testCompactMenuBarRowsPutPeriodBeforePercentage", testCompactMenuBarRowsPutPeriodBeforePercentage)
     , ("testLastUpdatedTimeIncludesSecondsForRefreshFeedback", testLastUpdatedTimeIncludesSecondsForRefreshFeedback)
+    , ("testResetTimeUsesCompactDateAndTime", testResetTimeUsesCompactDateAndTime)
     , ("testRefreshDecisionReusesSnapshotWhenTrackedLogIsUnchanged", testRefreshDecisionReusesSnapshotWhenTrackedLogIsUnchanged)
     , ("testRefreshDecisionRescansWhenDirectoryChanges", testRefreshDecisionRescansWhenDirectoryChanges)
     , ("testRefreshDecisionParsesOnlyTrackedLogWhenItChanges", testRefreshDecisionParsesOnlyTrackedLogWhenItChanges)
