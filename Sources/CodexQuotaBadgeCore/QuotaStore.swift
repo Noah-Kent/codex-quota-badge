@@ -5,6 +5,7 @@ import Combine
 public final class QuotaStore: ObservableObject {
     @Published public private(set) var availability: QuotaAvailability = .unavailable(reason: "尚未发现 Codex 配额数据")
     @Published public private(set) var now = Date()
+    @Published public private(set) var isRefreshing = false
     private let source: QuotaDataSource
     private var lastValid: QuotaSnapshot?
     private var timer: Timer?
@@ -16,14 +17,22 @@ public final class QuotaStore: ObservableObject {
             Task { @MainActor in self?.apply(result) }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.now = Date() }
+            Task { @MainActor in
+                self?.now = Date()
+                self?.source.refreshNow()
+            }
         }
     }
 
-    public func refresh() { source.refreshNow() }
+    public func refresh() {
+        isRefreshing = true
+        source.refreshNow()
+    }
     public func stop() { timer?.invalidate(); source.stop() }
 
     private func apply(_ result: Result<QuotaSnapshot?, QuotaDataSourceError>) {
+        now = Date()
+        isRefreshing = false
         switch result {
         case .success(.some(let snapshot)):
             lastValid = snapshot; availability = .fresh(snapshot: snapshot)

@@ -7,10 +7,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: QuotaBadgePanel?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let store = QuotaStore(source: LocalLogQuotaDataSource())
+        let isPreview = ProcessInfo.processInfo.environment["CODEX_QUOTA_PREVIEW"] == "1"
+        let source: QuotaDataSource = isPreview ? PreviewQuotaDataSource() : LocalLogQuotaDataSource()
+        let store = QuotaStore(source: source)
         self.store = store
-        panel = QuotaBadgePanel(store: store)
+        let panel = QuotaBadgePanel(store: store)
+        self.panel = panel
         store.start()
+        if isPreview {
+            DispatchQueue.main.async {
+                NSApp.activate(ignoringOtherApps: true)
+                panel.showForPreview()
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) { store?.stop() }

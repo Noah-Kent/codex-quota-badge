@@ -1,39 +1,56 @@
 import SwiftUI
+import AppKit
 import CodexQuotaBadgeCore
 
 struct QuotaBadgeView: View {
     @ObservedObject var store: QuotaStore
+    let onHide: () -> Void
+    let onQuit: () -> Void
 
     var body: some View {
         Group {
             switch store.availability {
-            case .fresh(let snapshot): rows(snapshot.windows, opacity: 1)
-            case .stale(let snapshot, _): rows(snapshot.windows, opacity: 0.55)
-            case .unavailable(let reason): Text("—  \(reason)").foregroundStyle(.secondary).padding(10)
+            case .fresh(let snapshot): detail(snapshot, isStale: false)
+            case .stale(let snapshot, _): detail(snapshot, isStale: true)
+            case .unavailable(let reason): Text(reason).foregroundStyle(.secondary).padding(12)
             }
         }
-        .padding(8)
-        .frame(minWidth: 250)
+        .padding(12)
+        .frame(width: 300)
     }
 
-    @ViewBuilder private func rows(_ windows: [QuotaWindow], opacity: Double) -> some View {
-        VStack(spacing: 0) {
-            ForEach(windows) { window in
-                HStack {
-                    Text(window.periodLabel).frame(width: 34, alignment: .leading).foregroundStyle(.secondary)
-                    Text("\(window.remainingPercent)%").frame(width: 48, alignment: .leading).foregroundStyle(color(for: window)).monospacedDigit()
+    @ViewBuilder private func detail(_ snapshot: QuotaSnapshot, isStale: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(snapshot.windows.sorted { $0.duration < $1.duration }) { window in
+                HStack(alignment: .firstTextBaseline) {
+                    Text(window.periodLabel).frame(width: 30, alignment: .leading).foregroundStyle(.secondary)
+                    Text("\(window.remainingPercent)%").foregroundStyle(color(for: window)).monospacedDigit()
                     Spacer()
-                    Text("↻ \(countdown(for: window))").monospacedDigit().foregroundStyle(.primary)
+                    Text("重置 \(resetTime(for: window))").foregroundStyle(.secondary).monospacedDigit()
                 }
-                .padding(.vertical, 5)
             }
-        }.opacity(opacity)
+            Divider()
+            HStack {
+                Text(isStale ? "最后更新（可能过期）" : "最后更新")
+                Spacer()
+                Text(LastUpdatedFormatter.text(snapshot.updatedAt)).monospacedDigit()
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            HStack {
+                Button(store.isRefreshing ? "正在刷新…" : "立即刷新") { store.refresh() }
+                    .disabled(store.isRefreshing)
+                Spacer()
+                Button("隐藏详情", action: onHide)
+                Spacer()
+                Button("完全退出", action: onQuit)
+            }
+            .font(.caption)
+        }
     }
 
-    private func countdown(for window: QuotaWindow) -> String {
-        let seconds = max(0, Int(window.resetsAt.timeIntervalSince(store.now)))
-        if seconds >= 86_400 { return "\(seconds / 86_400)d \((seconds % 86_400) / 3_600)h" }
-        return String(format: "%d:%02d", seconds / 3_600, (seconds % 3_600) / 60)
+    private func resetTime(for window: QuotaWindow) -> String {
+        window.resetsAt.formatted(date: .abbreviated, time: .shortened)
     }
 
     private func color(for window: QuotaWindow) -> Color {

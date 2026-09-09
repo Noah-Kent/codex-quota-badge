@@ -1,33 +1,163 @@
 # Codex Quota Badge
 
-A local-only macOS menu-bar companion for Codex quota snapshots.
+一个轻量、安全、本地优先的 macOS 菜单栏工具，用来查看 Codex 的 5 小时与 7 天配额。
 
-## Privacy and disk behavior
+> Lightweight, local-only Codex quota monitor for the macOS menu bar.
 
-V1 reads only local Codex session data. It does not send network requests, store credentials, read browser cookies, alter Codex files, or keep a usage history. The watcher sleeps between filesystem events and retains only the latest valid snapshot in memory.
-
-## Requirements
-
-- macOS 13 or later
-- Swift 6 command-line tools
-- At least one local Codex session containing quota data
-
-## Current limitations
-
-The first release is intentionally local-only. Notifications, login, account switching, credit management, and automatic updates are not included.
-
-## Verify
-
-```bash
-swift run CodexQuotaBadgeTestRunner
+```text
+5H 43%
+7D 75%
 ```
 
-## Run locally
+它从本机 Codex 会话日志中读取最近一次配额快照，不登录账号、不请求网络、不读取 Cookie 或凭证，也不会修改任何 Codex 数据。
+
+## 为什么做这个工具
+
+频繁打开 ChatGPT/Codex 的用量页面会打断工作。Codex Quota Badge 把最重要的配额信息放在菜单栏中，随时可见，同时尽可能减少后台活动和权限范围。
+
+这个项目坚持三个原则：
+
+- **轻量**：没有数据库、后台服务或持续高频扫描。
+- **安全**：仅在本地只读访问 Codex 会话日志，不接触登录凭证。
+- **克制**：只解决配额查看问题，不加入账号管理、自动操作或遥测。
+
+## 主要功能
+
+- 菜单栏双行紧凑显示 5 小时和 7 天剩余配额。
+- 点击后查看两个周期的重置时间与最后更新时间。
+- 提供“立即刷新”“隐藏详情”“完全退出”。
+- 详情窗口没有多余标题栏，并可从按钮以外的区域拖动。
+- 没有可用日志时显示“未检测到配额”，不会崩溃。
+- 日志暂时不可读或格式不完整时保留最近一次有效快照。
+- 完全离线工作，不依赖 OpenAI API 或第三方服务器。
+
+## 轻量是如何实现的
+
+首次启动时，工具会在 `~/.codex/sessions` 中定位最近的有效配额日志。找到后只在内存中保存：
+
+- 当前日志路径；
+- 文件修改时间；
+- 最近一次有效配额快照。
+
+后续每分钟刷新时：
+
+1. 如果当前日志没有变化，直接复用内存快照，不读取、不解析日志；
+2. 如果当前日志发生变化，只重新解析这一份文件；
+3. 如果出现新会话、日志被删除或目录结构变化，才重新定位有效日志。
+
+目录变化由 macOS 文件系统事件通知，只负责标记“需要重新定位”，不会持续轮询目录，也不会在事件发生时立即反复扫描。
+
+这意味着在大多数空闲时间里，每分钟只需要一次非常轻量的文件状态检查。
+
+## 安全与隐私
+
+| 行为 | 本工具是否执行 |
+| --- | --- |
+| 读取本地 Codex 会话日志 | 是，仅用于查找配额字段；不会保存或上传会话正文 |
+| 修改或删除 Codex 文件 | 否 |
+| 读取浏览器 Cookie | 否 |
+| 读取账号密码、Token 或 API Key | 否 |
+| 向 OpenAI 或第三方发送请求 | 否 |
+| 上传使用记录或遥测数据 | 否 |
+| 保存配额历史数据库 | 否 |
+| 自动操作用户账号 | 否 |
+
+工具只解析本机日志中已有的配额字段，例如 `payload.rate_limits`。所有处理均在当前 Mac 上完成，退出后内存中的快照随进程释放。
+
+“安全”在这里指最小权限、本地只读、无网络传输和不干预 Codex；任何软件都不应承诺绝对零风险。如果你对本地日志访问仍有顾虑，可以直接审查源码后再运行。
+
+## 工作流程
+
+```text
+~/.codex/sessions 中的本地日志
+              ↓
+首次定位最近的有效配额快照
+              ↓
+缓存文件路径、修改时间与快照
+              ↓
+每分钟检查文件状态
+       ├─ 未变化 → 复用内存快照
+       ├─ 文件变化 → 只解析当前文件
+       └─ 会话变化 → 重新定位有效日志
+              ↓
+菜单栏显示 5H / 7D 剩余配额
+```
+
+## 系统要求
+
+- macOS 13 或更高版本；
+- Swift 6 命令行工具；
+- 至少运行过一次包含配额信息的本地 Codex 会话。
+
+当前仓库提供源码运行方式，尚未提供签名的 `.app` 安装包。
+
+## 从源码运行
+
+克隆仓库并进入项目目录后执行：
 
 ```bash
 bash scripts/run-local.sh
 ```
 
-The app appears as `⌁ 配额` in the menu bar. Click it to show the two-row badge. If no local Codex quota snapshot is available, it shows a neutral unavailable state; it does not crash or request access to unrelated folders.
+工具启动后不会出现在 Dock 中，而是显示在 macOS 菜单栏。点击配额区域可打开详情；选择“完全退出”即可结束程序。
 
-Quit the process with `Control-C` when started from Terminal. V1 does not install itself to Applications, add a login item, or request notification permissions.
+也可以手动构建：
+
+```bash
+swift build
+swift run CodexQuotaBadge
+```
+
+## 测试
+
+运行项目自带的测试执行器：
+
+```bash
+swift run CodexQuotaBadgeTestRunner
+```
+
+测试覆盖配额周期识别、剩余百分比、真实桌面日志格式、异常尾行、菜单栏文本、刷新决策和缓存复用等行为。
+
+## 无数据与异常情况
+
+- 未安装或从未使用 Codex：显示“未检测到配额”。
+- ChatGPT/Codex 没有运行：继续显示最近一次有效快照。
+- 日志正在写入或末行不完整：忽略不完整内容，不崩溃。
+- 日志格式无法识别：保留最近一次有效数据，并在后续刷新时重试。
+- 当前日志被删除或产生新会话：通过文件系统事件标记，下次刷新时重新定位。
+
+## 当前限制
+
+- 配额来自 Codex 本地日志，而不是官方公开 API；未来日志格式变化时可能需要更新解析器。
+- 目前只针对 macOS，并以源码形式运行。
+- 不包含登录、账号切换、购买额度、配额重置、通知或自动更新。
+- 读取到的是最近一次写入本地日志的配额快照，不保证与网页端在每一秒完全同步。
+
+## 项目结构
+
+```text
+Sources/CodexQuotaBadge/          macOS 菜单栏界面
+Sources/CodexQuotaBadgeCore/      日志解析、缓存与配额状态
+Tests/CodexQuotaBadgeTestRunner/  测试执行器与脱敏日志样本
+scripts/                          本地运行脚本
+docs/                             设计与实施文档
+```
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request，尤其是：
+
+- 新版 Codex 日志格式兼容；
+- 更可靠的边界情况测试；
+- macOS 可访问性和菜单栏显示改进；
+- 应用打包、签名与发布流程。
+
+提交问题时请勿上传包含私人对话、文件路径、账号信息或完整会话内容的原始日志。建议先构造最小化、脱敏的测试样本。
+
+## 开源发布前
+
+仓库公开前，请根据你的开源意愿添加一份明确的 `LICENSE` 文件。若希望允许他人自由使用、修改和分发，可以考虑 MIT License；许可证应由项目所有者最终确认。
+
+## 免责声明
+
+本项目是非官方社区工具，与 OpenAI 没有关联或背书。Codex、ChatGPT 和 OpenAI 是其各自权利人的商标。本工具依赖本地实现细节，OpenAI 后续更新可能导致功能暂时不可用。

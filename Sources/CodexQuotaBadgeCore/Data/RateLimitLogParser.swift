@@ -26,6 +26,7 @@ public struct RateLimitLogParser {
     private func decodeSnapshot(from object: [String: Any], now: Date) -> QuotaSnapshot? {
         let rateLimits = (object["rateLimits"] as? [String: Any])
             ?? ((object["params"] as? [String: Any])?["rateLimits"] as? [String: Any])
+            ?? ((object["payload"] as? [String: Any])?["rate_limits"] as? [String: Any])
 
         guard let rateLimits else { return nil }
 
@@ -53,9 +54,9 @@ public struct RateLimitLogParser {
 
     private func decodeWindow(_ dictionary: [String: Any]?, id: String) -> QuotaWindow? {
         guard let dictionary,
-              let usedPercent = number(dictionary["usedPercent"]), (0...100).contains(usedPercent),
-              let durationMinutes = number(dictionary["windowDurationMins"]), durationMinutes > 0,
-              let resetTimestamp = number(dictionary["resetsAt"]), resetTimestamp > 0 else {
+              let usedPercent = number(dictionary["usedPercent"] ?? dictionary["used_percent"]), (0...100).contains(usedPercent),
+              let durationMinutes = number(dictionary["windowDurationMins"] ?? dictionary["window_minutes"]), durationMinutes > 0,
+              let resetTimestamp = number(dictionary["resetsAt"] ?? dictionary["resets_at"]), resetTimestamp > 0 else {
             return nil
         }
 
