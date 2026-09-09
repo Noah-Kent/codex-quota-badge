@@ -24,8 +24,9 @@ struct QuotaBadgeView: View {
             ForEach(snapshot.windows.sorted { $0.duration < $1.duration }) { window in
                 HStack(alignment: .firstTextBaseline) {
                     Text(window.periodLabel).frame(width: 30, alignment: .leading).foregroundStyle(.secondary)
-                    Text("\(window.remainingPercent)%").foregroundStyle(color(for: window)).monospacedDigit()
-                    Spacer()
+                    QuotaProgressBar(fraction: window.remainingFraction, tint: color(for: window))
+                        .frame(minWidth: 70, maxWidth: .infinity)
+                        .accessibilityLabel("\(window.periodLabel) 剩余 \(window.remainingPercent)%")
                     Text("重置 \(resetTime(for: window))").foregroundStyle(.secondary).monospacedDigit()
                 }
             }
@@ -55,5 +56,22 @@ struct QuotaBadgeView: View {
 
     private func color(for window: QuotaWindow) -> Color {
         switch window.severity { case .normal: .green; case .warning: .orange; case .critical: .red }
+    }
+}
+
+private struct QuotaProgressBar: View {
+    let fraction: Double
+    let tint: Color
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule().fill(.secondary.opacity(0.22))
+                Capsule()
+                    .fill(tint)
+                    .frame(width: geometry.size.width * min(max(fraction, 0), 1))
+            }
+        }
+        .frame(height: 6)
     }
 }

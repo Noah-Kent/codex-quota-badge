@@ -23,6 +23,17 @@ func testFiveHourWindowUses5HLabelAndRemainingPercentage() throws {
     try expectEqual(window.remainingPercent, 52, "five-hour remaining percentage")
 }
 
+func testProgressBarUsesRemainingQuotaFraction() throws {
+    let window = QuotaWindow(
+        id: "codex",
+        duration: 5 * 60 * 60,
+        usedPercent: 47,
+        resetsAt: .distantFuture
+    )
+
+    try expectEqual(window.remainingFraction, 0.53, "progress bar uses remaining quota")
+}
+
 func testSevenDayWindowUses7DLabel() throws {
     let window = QuotaWindow(
         id: "codex",
@@ -174,6 +185,7 @@ extension QuotaWindow {
 
 let tests: [(String, () throws -> Void)] = [
     ("testFiveHourWindowUses5HLabelAndRemainingPercentage", testFiveHourWindowUses5HLabelAndRemainingPercentage),
+    ("testProgressBarUsesRemainingQuotaFraction", testProgressBarUsesRemainingQuotaFraction),
     ("testSevenDayWindowUses7DLabel", testSevenDayWindowUses7DLabel),
     ("testSeverityUsesRemainingPercentageThresholds", testSeverityUsesRemainingPercentageThresholds)
     , ("testParserUsesTwoWindowRateLimitRecord", testParserUsesTwoWindowRateLimitRecord)

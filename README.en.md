@@ -15,10 +15,6 @@ A quiet, lightweight macOS menu-bar app for checking your remaining Codex 5-hour
 7D 92%
 ```
 
-Click the menu-bar quota to see reset times and the last update:
-
-![Codex Quota Badge detail panel](assets/screenshots/detail-preview.png)
-
 Codex Quota Badge does one job: it keeps the quota information you check most often in the menu bar, so you do not have to keep opening a usage page.
 
 > This is an open-source preview. Until a public release is prepared, local packages use ad-hoc signing and are not Apple-notarized. Security prompts may vary between Macs.
@@ -26,7 +22,7 @@ Codex Quota Badge does one job: it keeps the quota information you check most of
 ## Features
 
 - Compact two-line display for remaining `5H` and `7D` quota.
-- Reset times and last-update time available on click.
+- A colored progress bar, reset times, and last-update time available on click.
 - **Refresh now**, **Hide details**, and **Quit** controls.
 - A borderless detail panel that can be dragged outside the button area.
 - A calm **No quota detected** state when no usable snapshot exists.

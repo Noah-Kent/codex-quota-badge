@@ -23,6 +23,10 @@ public struct QuotaWindow: Equatable, Identifiable, Sendable {
         max(0, min(100, 100 - Int(usedPercent.rounded())))
     }
 
+    public var remainingFraction: Double {
+        Double(remainingPercent) / 100
+    }
+
     public var periodLabel: String {
         duration <= 6 * 60 * 60 ? "5H" : "7D"
     }
