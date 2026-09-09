@@ -61,6 +61,40 @@ func testParserUsesDesktopSnakeCaseRateLimitRecord() throws {
     try expectEqual(snapshot.windows.map(\.remainingPercent), [60, 16], "desktop rate-limit remaining values")
 }
 
+func testTailParserFindsLatestSnapshotNearEndOfLargeLog() throws {
+    let file = FileManager.default.temporaryDirectory.appending(path: "codex-quota-badge-tail-\(UUID().uuidString).jsonl")
+    defer { try? FileManager.default.removeItem(at: file) }
+
+    let olderLine = #"{"payload":{"rate_limits":{"primary":{"used_percent":48,"window_minutes":300,"resets_at":2000000000}}}}"#
+    let newestLine = #"{"payload":{"rate_limits":{"primary":{"used_percent":47,"window_minutes":300,"resets_at":2000000001},"secondary":{"used_percent":24,"window_minutes":10080,"resets_at":2000000002}}}}"#
+    let padding = String(repeating: "{\"event\":\"message\",\"text\":\"padding\"}\n", count: 40_000)
+    try (olderLine + "\n" + padding + newestLine + "\n").write(to: file, atomically: true, encoding: .utf8)
+
+    let snapshot = try unwrap(
+        RateLimitLogParser().latestSnapshot(inTailOf: file, now: .distantPast),
+        "latest tail snapshot"
+    )
+    try expectEqual(snapshot.windows.map(\.remainingPercent), [53, 76], "tail parser uses newest quota record")
+}
+
+func testWatchPathUsesSessionDirectoryWhenItExists() throws {
+    let sessions = URL(fileURLWithPath: "/tmp/.codex/sessions")
+    try expectEqual(
+        LogWatchPath.url(for: sessions, sessionDirectoryExists: true),
+        sessions,
+        "watch the sessions directory instead of its parent"
+    )
+}
+
+func testWatchPathUsesParentUntilSessionDirectoryExists() throws {
+    let sessions = URL(fileURLWithPath: "/tmp/.codex/sessions")
+    try expectEqual(
+        LogWatchPath.url(for: sessions, sessionDirectoryExists: false),
+        sessions.deletingLastPathComponent(),
+        "watch the parent only while sessions is absent"
+    )
+}
+
 func testMenuBarSummaryUsesBothQuotaWindows() throws {
     let snapshot = QuotaSnapshot(
         windows: [
@@ -145,6 +179,9 @@ let tests: [(String, () throws -> Void)] = [
     , ("testParserUsesTwoWindowRateLimitRecord", testParserUsesTwoWindowRateLimitRecord)
     , ("testParserIgnoresIncompleteTrailingLine", testParserIgnoresIncompleteTrailingLine)
     , ("testParserUsesDesktopSnakeCaseRateLimitRecord", testParserUsesDesktopSnakeCaseRateLimitRecord)
+    , ("testTailParserFindsLatestSnapshotNearEndOfLargeLog", testTailParserFindsLatestSnapshotNearEndOfLargeLog)
+    , ("testWatchPathUsesSessionDirectoryWhenItExists", testWatchPathUsesSessionDirectoryWhenItExists)
+    , ("testWatchPathUsesParentUntilSessionDirectoryExists", testWatchPathUsesParentUntilSessionDirectoryExists)
     , ("testMenuBarSummaryUsesBothQuotaWindows", testMenuBarSummaryUsesBothQuotaWindows)
     , ("testMenuBarSummaryUsesUnavailableTextWhenNoSnapshotExists", testMenuBarSummaryUsesUnavailableTextWhenNoSnapshotExists)
     , ("testCompactMenuBarRowsPutPeriodBeforePercentage", testCompactMenuBarRowsPutPeriodBeforePercentage)

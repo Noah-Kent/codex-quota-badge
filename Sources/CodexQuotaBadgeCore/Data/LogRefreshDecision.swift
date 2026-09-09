@@ -15,3 +15,9 @@ public enum LogRefreshDecision {
         return cachedModificationDate == currentModificationDate ? .reuseCachedSnapshot : .parseTrackedFile
     }
 }
+
+public enum LogWatchPath {
+    public static func url(for sessionRoot: URL, sessionDirectoryExists: Bool) -> URL {
+        sessionDirectoryExists ? sessionRoot : sessionRoot.deletingLastPathComponent()
+    }
+}

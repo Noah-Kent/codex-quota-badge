@@ -2,22 +2,44 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-A lightweight, safe, local-first macOS menu-bar app for viewing your Codex 5-hour and 7-day quota.
+A quiet, lightweight macOS menu-bar app for checking your remaining Codex 5-hour and 7-day quota.
 
-**No network requests · No credential access · Read-only logs · No telemetry**
+**Local and read-only · No credential access · No network requests · No telemetry**
+
+<p align="center">
+  <img src="assets/app-icon/AppIcon-source.png" width="128" alt="Codex Quota Badge icon">
+</p>
 
 ```text
 5H 52%
 7D 92%
 ```
 
+Click the menu-bar quota to see reset times and the last update:
+
 ![Codex Quota Badge detail panel](assets/screenshots/detail-preview.png)
 
-Opening a usage page repeatedly interrupts work. Codex Quota Badge keeps the essential quota information in the menu bar, with reset times and last-update time available on click.
+Codex Quota Badge does one job: it keeps the quota information you check most often in the menu bar, so you do not have to keep opening a usage page.
 
-> This is currently a development preview. The repository supports running from source. A Developer ID-signed and Apple-notarized installer will be provided for the first public release.
+> This is an open-source preview. Until a public release is prepared, local packages use ad-hoc signing and are not Apple-notarized. Security prompts may vary between Macs.
 
-## Run and install
+## Features
+
+- Compact two-line display for remaining `5H` and `7D` quota.
+- Reset times and last-update time available on click.
+- **Refresh now**, **Hide details**, and **Quit** controls.
+- A borderless detail panel that can be dragged outside the button area.
+- A calm **No quota detected** state when no usable snapshot exists.
+- Keeps the latest valid snapshot if a log is temporarily unreadable or ends with an incomplete line.
+- A native macOS app icon and no Dock presence.
+
+## Install and run
+
+### Install a release
+
+After a public version is available, download the `.dmg` from [GitHub Releases](../../releases/latest), open it, and drag the app into **Applications**.
+
+The current local preview package uses ad-hoc signing and is intended only for testing on the developer's own Mac. Do not redistribute it. If macOS displays a security warning, verify the download source and inspect the project rather than disabling system security protections.
 
 ### Run from source
 
@@ -25,130 +47,88 @@ Requirements:
 
 - macOS 13 or later;
 - Swift 6 command-line tools;
-- at least one local Codex session that contains quota data.
+- at least one Codex session that has produced a local quota snapshot.
 
-Clone the repository, enter its directory, then run:
+Clone the repository, enter its directory, and run:
 
 ```bash
 bash scripts/run-local.sh
 ```
 
-The app does not appear in the Dock; it appears in the macOS menu bar. Click the quota area to open details, and choose **Quit** to exit.
-
-You can also build it manually:
+Or run it manually:
 
 ```bash
 swift build
 swift run CodexQuotaBadge
 ```
 
-### Development preview installer
-
-To generate a local `.app` and `.dmg` preview:
+To build local preview `.app` and `.dmg` files:
 
 ```bash
 bash scripts/create-preview-dmg.sh
 ```
 
-The artifacts are placed in `dist/`. They use ad-hoc signing for local preview only and are **not Apple-notarized**. Gatekeeper will treat them as untrusted, so do not distribute this preview package. Public downloadable releases will use Developer ID signing and Apple notarization.
+Artifacts are written to `dist/`.
 
-## Features
+## Privacy and security
 
-- Compact two-line menu-bar display for 5-hour and 7-day remaining quota.
-- Reset times and last-update time in the detail panel.
-- **Refresh now**, **Hide details**, and **Quit** controls.
-- Borderless, draggable detail panel.
-- A calm **No quota detected** state when no usable log exists; the app does not crash.
-- Keeps the most recent valid snapshot when a log is temporarily unreadable or has an incomplete final line.
-- Works fully offline and does not use an OpenAI API or third-party server.
+The app reads existing Codex session logs under `~/.codex/sessions` on the current Mac only to locate quota snapshot fields. It does not:
 
-## Security and privacy
+- read browser cookies, passwords, tokens, or API keys;
+- modify or delete Codex logs;
+- save, upload, or forward conversation content;
+- send requests to OpenAI or third-party servers;
+- create a quota-history database or upload telemetry;
+- sign in, purchase credits, or perform account actions.
 
-| Behavior | Does the app do it? |
-| --- | --- |
-| Read local Codex session logs | Yes, only to locate quota fields |
-| Save or upload conversation content | No |
-| Modify or delete Codex files | No |
-| Read browser cookies | No |
-| Read passwords, tokens, or API keys | No |
-| Send requests to OpenAI or third parties | No |
-| Upload usage records or telemetry | No |
-| Store a quota-history database | No |
-| Automate account actions | No |
+Parsing happens in local memory. The cached quota snapshot disappears with the process when the app quits.
 
-The app opens local Codex session logs only to locate existing quota snapshots such as `payload.rate_limits`. It does not save the conversation body elsewhere, upload it, or send it to another process. Processing happens on the current Mac, and the in-memory snapshot is released when the app quits.
+Here, “safe” means minimal permissions, local read-only access, no network transfer, and no interference with Codex. No software should claim absolute zero risk. If local log access concerns you, inspect the source before running it.
 
-Here, “safe” means minimal permissions, local read-only operation, no network transfer, and no interference with Codex. No software should promise absolute zero risk; inspect the source before running it if local log access is a concern.
+Never attach a complete session log to an issue. Share only a minimal, redacted sample with conversation content, real paths, and account information removed.
 
 ## Why it is lightweight
 
-At startup, the app finds the newest valid quota log in `~/.codex/sessions` and keeps only these values in memory:
-
-- the current log path;
-- its modification time;
-- the latest valid quota snapshot.
-
-On each one-minute refresh:
-
-1. If the tracked log is unchanged, the in-memory snapshot is reused without reopening or reparsing it.
-2. If it changed, only that file is parsed again.
-3. If a new session appears, the file is deleted, or the directory changes, the app discovers a valid log again.
-
-macOS filesystem events mark that rediscovery is needed. They do not create a continual directory-polling loop or repeated scans when events arrive.
+The app does not rescan every log once a minute:
 
 ```text
-Local Codex logs
-       ↓ initial discovery
-Cached path, modification time, and quota snapshot
-       ↓ one-minute status check
- ├─ unchanged → reuse in-memory snapshot
- ├─ changed   → parse only the tracked file
- └─ new session / deletion → rediscover a valid log
-       ↓
-Menu bar shows remaining 5H / 7D quota
+Launch → find the newest valid log and cache its quota snapshot
+                         ↓
+Each minute, check only the tracked file's state
+ ├─ unchanged → reuse the in-memory snapshot
+ ├─ changed   → read and parse small chunks from the tracked file's tail
+ └─ new session or deletion → rediscover a valid log
 ```
 
-## Local performance measurement
+macOS filesystem events report directory changes. The app has no periodic writes, database, history store, or background network traffic.
 
-This is one reproducible idle measurement on the development machine, not a fixed result for every Mac:
-
-| Condition | Result |
-| --- | --- |
-| Hardware | Apple Silicon, macOS 26.6.2 |
-| Build | Release build with fixed preview data |
-| CPU | `0.0%` in two samples, ten seconds apart |
-| Resident memory (RSS) | about `56.8 MiB` in both samples |
-| Binary minimum macOS version | macOS 13.0 |
-
-Per-system-call filesystem tracing requires administrator privileges on macOS, so it is not represented as measured data. What is verified by implementation and automated tests is that unchanged logs reuse memory rather than being reopened or reparsed; the app also has no periodic writes, database, or quota-history file.
-
-See the [performance methodology](docs/PERFORMANCE.md) for details and limits.
+Two idle samples of a Release build on the development Mac measured `0.0%` CPU and about `56.8 MiB` RSS. This is a short measurement on one machine, not a guarantee for every Mac. See [performance methodology](docs/PERFORMANCE.md) for the method and disk-I/O boundaries.
 
 ## FAQ
 
 ### Why does it say “No quota detected”?
 
-You may not have a local Codex session containing quota data yet. The app will not ask you to sign in or fall back to browser or account credentials.
+There may not be a local Codex session containing a quota snapshot yet. The app will not request a login or fall back to browser or account credentials. Run a Codex session, then choose **Refresh now**.
 
 ### Must ChatGPT or Codex remain open?
 
-No. The app can continue showing the latest valid snapshot after Codex is closed. Values update only after Codex writes a new local quota snapshot.
+No. The app can continue showing the latest valid snapshot. Values change only after Codex writes a newer local quota snapshot.
 
 ### Why can the value differ from the web page?
 
-The app reads the most recently written local log snapshot, not a public official API. It can temporarily lag behind the web UI.
+The app reads the most recently written local snapshot, not an official public real-time quota API, so it may temporarily lag behind the web UI.
 
 ### What if a Codex update changes the log format?
 
-Local log format is an implementation detail and may change. Please open an issue with a minimal, redacted sample; never upload a full session log.
+The local log format is an implementation detail and may change. Open an issue with a minimal, redacted format sample.
 
 ### How do I quit or uninstall it?
 
-Choose **Quit** in the detail panel. The source version installs no login item, background service, or quota-history database; remove the cloned project directory to remove the source and build artifacts.
+Choose **Quit** in the detail panel. The app installs no login item, background service, or quota-history database. Remove it from **Applications** to uninstall it.
 
 ### Why is the menu-bar item missing?
 
-First confirm that the app is still running. A crowded macOS menu bar or a third-party menu-bar manager can also hide items.
+First confirm that the app is running. A crowded menu bar or a third-party menu-bar manager may also hide menu-bar items.
 
 ## Tests
 
@@ -156,42 +136,36 @@ First confirm that the app is still running. A crowded macOS menu bar or a third
 swift run CodexQuotaBadgeTestRunner
 ```
 
-Tests cover quota-window recognition, remaining percentage, desktop-log format, incomplete final lines, menu-bar text, local-time display, refresh decisions, and cache reuse.
+Tests cover quota-window recognition, remaining percentages, desktop log format, incomplete final lines, menu-bar text, local time, cache reuse, and refresh decisions.
 
 ## Current limitations
 
-- macOS only, currently distributed from source;
-- quota comes from local Codex logs, so parser updates may be needed if their format changes;
-- no sign-in, account switching, credit purchase, notifications, or automatic updates;
-- tested on Apple Silicon; Intel Macs have not yet been manually verified;
-- release-build CPU/RSS measurement is documented, but this project does not publish estimated disk metrics as measured facts.
+- macOS 13 or later only.
+- Tested on Apple Silicon; Intel Mac has not been manually verified.
+- Quota comes from local Codex logs, so parser updates may be needed if their format changes.
+- No sign-in, account switching, credit purchase, notifications, or automatic updates.
+- The current public version is not yet Developer ID-signed or Apple-notarized.
 
 ## Project structure
 
 ```text
 Sources/CodexQuotaBadge/          macOS menu-bar UI
-Sources/CodexQuotaBadgeCore/      log parsing, cache, and quota state
-Tests/CodexQuotaBadgeTestRunner/  test runner and redacted log fixtures
-assets/screenshots/               README images
-scripts/                          local run, preview, and package scripts
-docs/                             design, plans, performance, and status
+Sources/CodexQuotaBadgeCore/      Log parsing, cache, and quota state
+Tests/CodexQuotaBadgeTestRunner/  Test runner and redacted fixtures
+Packaging/                        App metadata and icon
+assets/                           README screenshots and icon source
+scripts/                          Local run, build, and package scripts
+docs/                             Design, plans, performance, and status
 ```
 
 ## Contributing
 
-Issues and pull requests are welcome, especially for:
-
-- compatibility with new Codex log formats;
-- stronger edge-case tests;
-- macOS accessibility and menu-bar improvements;
-- app packaging, signing, and release workflows.
-
-Do not attach raw logs containing private conversation content, real file paths, account information, or complete sessions.
+Issues and pull requests are welcome, especially for new log formats, edge cases, macOS accessibility, and release workflow improvements.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE). You may use, copy, modify, and distribute it, including for commercial use, provided that the copyright and license notice are retained.
+This project is licensed under the [MIT License](LICENSE). You may use, copy, modify, and distribute it, including commercially, as long as the copyright and license notice are retained.
 
 ## Disclaimer
 
-This is an unofficial community tool and is not affiliated with or endorsed by OpenAI. Codex, ChatGPT, and OpenAI are trademarks of their respective owners. The app relies on local implementation details that may change in a future OpenAI update.
+This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. Codex, ChatGPT, and OpenAI are trademarks of their respective owners. The app relies on local implementation details that may change in a future update.

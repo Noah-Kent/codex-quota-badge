@@ -8,6 +8,7 @@ public final class LocalLogQuotaDataSource: QuotaDataSource, @unchecked Sendable
     private let queue = DispatchQueue(label: "CodexQuotaBadge.LocalLogQuotaDataSource")
     private var callback: (@Sendable (Result<QuotaSnapshot?, QuotaDataSourceError>) -> Void)?
     private var eventStream: FSEventStreamRef?
+    private var watchedRoot: URL?
     private var directoryChanged = true
     private var trackedFile: URL?
     private var trackedModificationDate: Date?
@@ -33,12 +34,7 @@ public final class LocalLogQuotaDataSource: QuotaDataSource, @unchecked Sendable
     public func stop() {
         queue.async { [weak self] in
             guard let self else { return }
-            if let eventStream {
-                FSEventStreamStop(eventStream)
-                FSEventStreamInvalidate(eventStream)
-                FSEventStreamRelease(eventStream)
-                self.eventStream = nil
-            }
+            self.stopWatching()
             self.callback = nil
         }
     }
@@ -69,6 +65,7 @@ public final class LocalLogQuotaDataSource: QuotaDataSource, @unchecked Sendable
     }
 
     private func performRefresh() {
+        startWatching()
         let result: Result<QuotaSnapshot?, QuotaDataSourceError>
         do { result = .success(try readLatestSnapshot()) }
         catch { result = .failure(.unreadable) }
@@ -98,7 +95,7 @@ public final class LocalLogQuotaDataSource: QuotaDataSource, @unchecked Sendable
     }
 
     private func parse(file: URL) throws -> QuotaSnapshot? {
-        try parser.latestSnapshot(in: String(contentsOf: file), now: Date())
+        try parser.latestSnapshot(inTailOf: file, now: Date())
     }
 
     private func clearCache() {
@@ -113,8 +110,12 @@ public final class LocalLogQuotaDataSource: QuotaDataSource, @unchecked Sendable
     }
 
     private func startWatching() {
-        guard eventStream == nil else { return }
-        let watchRoot = root.deletingLastPathComponent()
+        let watchRoot = LogWatchPath.url(
+            for: root,
+            sessionDirectoryExists: FileManager.default.fileExists(atPath: root.path)
+        )
+        guard eventStream == nil || watchedRoot != watchRoot else { return }
+        stopWatching()
         guard FileManager.default.fileExists(atPath: watchRoot.path) else { return }
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(), retain: nil, release: nil, copyDescription: nil)
         guard let stream = FSEventStreamCreate(
@@ -129,6 +130,17 @@ public final class LocalLogQuotaDataSource: QuotaDataSource, @unchecked Sendable
         FSEventStreamSetDispatchQueue(stream, queue)
         FSEventStreamStart(stream)
         eventStream = stream
+        watchedRoot = watchRoot
+    }
+
+    private func stopWatching() {
+        if let eventStream {
+            FSEventStreamStop(eventStream)
+            FSEventStreamInvalidate(eventStream)
+            FSEventStreamRelease(eventStream)
+            self.eventStream = nil
+        }
+        watchedRoot = nil
     }
 
     private static let eventCallback: FSEventStreamCallback = { _, info, _, eventPaths, _, _ in
