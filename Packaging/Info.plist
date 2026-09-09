@@ -10,6 +10,8 @@
     <string>CodexQuotaBadge</string>
     <key>CFBundleIdentifier</key>
     <string>com.codexquotabadge.app</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
