@@ -21,7 +21,7 @@ Click the menu-bar quota to see colored progress bars, reset times, and the last
 
 Codex Quota Badge does one job: it keeps the quota information you check most often in the menu bar, so you do not have to keep opening a usage page.
 
-> This is an open-source preview. Until a public release is prepared, local packages use ad-hoc signing and are not Apple-notarized. Security prompts may vary between Macs.
+> This is an open-source preview. Release `.dmg` files use ad-hoc signing and are not Apple-notarized. A macOS security prompt means that the system cannot verify the publisher identity; it **does not mean** macOS has determined that this project is malicious or unsafe. Always download from this repository and review the source yourself.
 
 ## Features
 
@@ -35,11 +35,13 @@ Codex Quota Badge does one job: it keeps the quota information you check most of
 
 ## Install and run
 
-### Install a release
+### Install the preview package
 
-After a public version is available, download the `.dmg` from [GitHub Releases](../../releases/latest), open it, and drag the app into **Applications**.
+Download the preview `.dmg` from [GitHub Releases](../../releases/latest), open it, and drag the app into **Applications**.
 
-The current local preview package uses ad-hoc signing and is intended only for testing on the developer's own Mac. Do not redistribute it. If macOS displays a security warning, verify the download source and inspect the project rather than disabling system security protections.
+The preview package is not Developer ID-signed or Apple-notarized, so macOS may block its first launch or display a warning such as an unverified developer notice. This indicates that Apple has not verified the **publisher identity**; it is not a security verdict about the software. Confirm that the file came from this repository, and do not disable Gatekeeper or weaken system-wide security settings just to install it.
+
+If you prefer not to handle download security prompts, build from source on your own Mac. A locally built copy does not carry the internet-download quarantine flag and will normally avoid this prompt.
 
 ### Run from source
 
@@ -144,7 +146,7 @@ Tests cover quota-window recognition, remaining percentages, desktop log format,
 - Tested on Apple Silicon; Intel Mac has not been manually verified.
 - Quota comes from local Codex logs, so parser updates may be needed if their format changes.
 - No sign-in, account switching, credit purchase, notifications, or automatic updates.
-- The current public version is not yet Developer ID-signed or Apple-notarized.
+- The current Release is an ad-hoc-signed, non-notarized preview. A security prompt means the publisher identity is unverified, not that the app is deemed malicious; users who prefer to avoid the prompt can build from source.
 
 ## Project structure
 
