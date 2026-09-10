@@ -4,6 +4,10 @@ import CodexQuotaBadgeCore
 
 struct QuotaBadgeView: View {
     @ObservedObject var store: QuotaStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var previousSnapshotUpdate: Date?
+    @State private var updateIsHighlighted = false
+    @State private var highlightGeneration = 0
     let onHide: () -> Void
     let onQuit: () -> Void
 
@@ -33,11 +37,20 @@ struct QuotaBadgeView: View {
             Divider()
             HStack {
                 Text(isStale ? "最后更新（可能过期）" : "最后更新")
+                    .foregroundStyle(.secondary)
                 Spacer()
-                Text(LastUpdatedFormatter.text(snapshot.updatedAt)).monospacedDigit()
+                Text(LastUpdatedFormatter.text(snapshot.updatedAt))
+                    .monospacedDigit()
+                    .foregroundStyle(updateIsHighlighted ? Color.green : Color.secondary)
+                    .scaleEffect(updateIsHighlighted && !reduceMotion ? 1.06 : 1)
+                    .onAppear {
+                        previousSnapshotUpdate = snapshot.updatedAt
+                    }
+                    .onChange(of: snapshot.updatedAt) { newUpdate in
+                        highlightIfNeeded(for: newUpdate)
+                    }
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
             HStack {
                 Button(store.isRefreshing ? "正在刷新…" : "立即刷新") { store.refresh() }
                     .disabled(store.isRefreshing)
@@ -52,6 +65,28 @@ struct QuotaBadgeView: View {
 
     private func resetTime(for window: QuotaWindow) -> String {
         ResetTimeFormatter.text(window.resetsAt)
+    }
+
+    private func highlightIfNeeded(for newUpdate: Date) {
+        let shouldHighlight = UpdateHighlightDecision.shouldHighlight(
+            previous: previousSnapshotUpdate,
+            current: newUpdate
+        )
+        previousSnapshotUpdate = newUpdate
+        guard shouldHighlight else { return }
+
+        highlightGeneration += 1
+        let generation = highlightGeneration
+        withAnimation(.easeOut(duration: 0.15)) {
+            updateIsHighlighted = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard generation == highlightGeneration else { return }
+            withAnimation(.easeOut(duration: 0.5)) {
+                updateIsHighlighted = false
+            }
+        }
     }
 
     private func color(for window: QuotaWindow) -> Color {

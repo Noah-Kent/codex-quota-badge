@@ -184,6 +184,27 @@ func testRefreshDecisionParsesOnlyTrackedLogWhenItChanges() throws {
     )
 }
 
+func testUpdateHighlightOnlyFiresForChangedExistingSnapshot() throws {
+    let first = Date(timeIntervalSince1970: 1_000)
+    let second = Date(timeIntervalSince1970: 1_001)
+
+    try expectEqual(
+        UpdateHighlightDecision.shouldHighlight(previous: nil, current: first),
+        false,
+        "initial snapshot does not highlight"
+    )
+    try expectEqual(
+        UpdateHighlightDecision.shouldHighlight(previous: first, current: first),
+        false,
+        "unchanged snapshot does not highlight"
+    )
+    try expectEqual(
+        UpdateHighlightDecision.shouldHighlight(previous: first, current: second),
+        true,
+        "new snapshot highlights"
+    )
+}
+
 func unwrap<T>(_ value: T?, _ name: String) throws -> T {
     guard let value else { throw TestFailure(description: "\(name): expected a value") }
     return value
@@ -214,6 +235,7 @@ let tests: [(String, () throws -> Void)] = [
     , ("testRefreshDecisionReusesSnapshotWhenTrackedLogIsUnchanged", testRefreshDecisionReusesSnapshotWhenTrackedLogIsUnchanged)
     , ("testRefreshDecisionRescansWhenDirectoryChanges", testRefreshDecisionRescansWhenDirectoryChanges)
     , ("testRefreshDecisionParsesOnlyTrackedLogWhenItChanges", testRefreshDecisionParsesOnlyTrackedLogWhenItChanges)
+    , ("testUpdateHighlightOnlyFiresForChangedExistingSnapshot", testUpdateHighlightOnlyFiresForChangedExistingSnapshot)
 ]
 
 do {
